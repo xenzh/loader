@@ -8,30 +8,32 @@
 // 2. for each of them get Album:Info
 // 2. filter albums by year and tag from Album:Info
 // 3. Return Album:Tracks for all albums
+
+// Basic eval blocks:
+// * get_target(p: &mut Plan, tgt: Target, inp: &[Target]) -> Result<Hops, UnableTo>;
+//   find method returning tgt and requiring inp. If no exact match, call recursively on missing tgts
 //
-// static info: map_in  () like Album+Info -> [AlbumArtist, AlbumName]
-//              map_out () like Album+Info -> [AlbumName, AlbumArtist, AlbumTracks, ...]
+// * stream(plan_item_with_single_return_tgt, how_much) -> plan_item_with_stream_return_tgt
+//   someone has to do Target -> &[Target] transformation by making multiple same method requests
 //
-// tracks can be retrieved from album?
-// -- yes, via AlbumTracks (album_out). need an album or albums
-// okay, need album or albums. Where can I get them from?
-// -- from places i have enough parameters for (album_in): -Album:Info, +Artist:Albums, +Chart:Albums, +Tag:Albums...
-// what is the most restrictive one? (album_in)? (other options might be reviewed, least
-//                                                complex one should be selected)
-// -- Artist:Albums (1 param of mine in request, Album:Artist)
-// will i be able to filter results with just this response?
-// -- no
-// okay, can I get limitation params from based on results?
-// -- yes, tags and releasedate from Album:Info
+// * filter(p: &mut Plan, source: &FieldList, subj: Subject, inp: &[Target]) -> Result<Hops, UnableTo>;
+//   filter target from method response (maybe streamed) fields by applying imp values
+//   if not enough, may call get_target() to retrieve missing source filter fields.
+
+// Steps:
+// 1. Get who_returns(FIELD) order by [max_req, max_rsp]
+// 2.
+
 
 use std::borrow::Borrow;
 use crate::meta::method::{Target, Method};
 
-pub struct MethodCache {
+
+pub struct Methods {
     dummy: Vec<Box<Method>>,
 }
 
-impl MethodCache {
+impl Methods {
     // methods return list / iter of methods fitting any of criteria, ordered by number of matching
     // criteria
 
@@ -44,21 +46,22 @@ impl MethodCache {
     }
 }
 
-// eval steps:
-// 1. get all methods that return tracks
-// 2. their input: does all my conditions fit?
-//    * yes, one - add to plan
-//    * yes, many - ?? add one that returns more info?..
-//    * no, we have less then required - which request has required params?
-//    * no, we have more than required
-//
-// GET tracks WHERE (album.year is 2018) and ("chamber pop" in album.tags) and (artist.name is "iamthemorning")
-//
-// 1. get all methods -> album.getinfo(artist, album), ...
-// 2. artist.name - OK
-//    album.name - MISS
-//      how to get album.name by album.year, album.tags and artist.name?
-//        * 
-//
-//      album.name -> artist.gettopalbums(artist.name) -> [album.name, artist{}, tags[]...]
-//        
+
+#[derive(Debug)]
+pub struct PlanItem;
+
+
+pub struct MethodMatch<'m> {
+    method: &'m Method,
+    missing_input: Vec<Target>,
+    extra_input: Vec<Target>,
+}
+
+pub trait Planner {
+    fn stream();
+
+    fn filter();
+
+    // Select methods than take 'from' input and return 'to' output
+    fn transform(&self, methods: &Methods, from: &[Target], to: Target) -> &[MethodMatch];
+}

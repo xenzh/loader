@@ -3,6 +3,7 @@ pub mod query;
 pub mod eval;
 
 pub mod method;
+pub mod action;
 
 
 use std::fmt::Debug;
